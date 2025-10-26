@@ -24,7 +24,7 @@ jobs:
       - name: Check if version already exists
         id: check-release
         run: |
-          if gh release view "v${{ steps.fetch-warp.outputs.x64_version }}" --repo $GITHUB_REPOSITORY >/dev/null 2>&1; then
+          if gh release view "${{ steps.fetch-warp.outputs.x64_version }}" --repo $GITHUB_REPOSITORY >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
             echo "Release already exists. Skipping."
           else
