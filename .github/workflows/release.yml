@@ -17,7 +17,7 @@ jobs:
       - name: Fetch Warp version info
         id: fetch-warp
         run: |
-          python3 fetch_warp_info.py
+          python3 scripts/fetch_warp_info.py
         env:
           GITHUB_OUTPUT: ${{ github.output }}
 
