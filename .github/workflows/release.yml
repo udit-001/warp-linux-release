@@ -17,13 +17,19 @@ jobs:
       - name: Fetch Warp version info
         id: fetch-warp
         run: |
-          # Get the redirect URL from the 302 response
           x64_redirect_url=$(curl -s -i "https://app.warp.dev/download?package=appimage" | grep -i "^location:" | sed 's/^[Ll]ocation: *//' | tr -d '\r\n')
           echo "x64_download_url=$x64_redirect_url" >> $GITHUB_OUTPUT
           
           # Extract version from the URL path (e.g., v0.2025.10.22.08.13.stable_02)
           x64_version=$(echo $x64_redirect_url | grep -oP 'v\d+(?:\.\d+){4}\.[A-Za-z0-9_.]+(?=/)')
           echo "x64_version=$x64_version" >> $GITHUB_OUTPUT
+
+          arm64_redirect_url=$(curl -s -i "https://app.warp.dev/download?package=appimage_arm64" | grep -i "^location:" | sed 's/^[Ll]ocation: *//' | tr -d '\r\n')
+          echo "arm64_download_url=$arm64_redirect_url" >> $GITHUB_OUTPUT
+          
+          # Extract version from the URL path (e.g., v0.2025.10.22.08.13.stable_02)
+          arm64_version=$(echo $arm64_redirect_url | grep -oP 'v\d+(?:\.\d+){4}\.[A-Za-z0-9_.]+(?=/)')
+          echo "arm64_version=$arm64_version" >> $GITHUB_OUTPUT
 
       - name: Check if version already exists
         id: check-release
@@ -43,6 +49,12 @@ jobs:
           curl -L -o Warp-${{ steps.fetch-warp.outputs.x64_version }}-x86_64.AppImage "${{ steps.fetch-warp.outputs.x64_download_url }}"
           chmod +x Warp-${{ steps.fetch-warp.outputs.x64_version }}-x86_64.AppImage
 
+      - name: Download Warp AppImage for arm64
+        if: steps.check-release.outputs.exists == 'false'
+        run: |
+          curl -L -o Warp-${{ steps.fetch-warp.outputs.arm64_version }}-aarch64.AppImage "${{ steps.fetch-warp.outputs.arm64_download_url }}"
+          chmod +x Warp-${{ steps.fetch-warp.outputs.arm64_version }}-aarch64.AppImage
+
       - name: Create GitHub Release
         if: steps.check-release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
@@ -52,6 +64,7 @@ jobs:
           body: "Automated release of Warp ${{ steps.fetch-warp.outputs.x64_version }} for Linux x64"
           files: |
             Warp-${{ steps.fetch-warp.outputs.x64_version }}-x86_64.AppImage
+            Warp-${{ steps.fetch-warp.outputs.arm64_version }}-aarch64.AppImage
 
 
       - name: Set last release and run timestamps
