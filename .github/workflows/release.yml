@@ -1,0 +1,92 @@
+name: Cursor Release
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
+
+jobs:
+  check-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Fetch Cursor version info
+        id: fetch-cursor
+        run: |
+          x64_response=$(curl -s "https://app.warp.dev/download?package=appimage")
+          echo "x64_version=$(echo $x64_response | jq -r '.version')" >> $GITHUB_OUTPUT
+          echo "x64_download_url=$(echo $x64_response | jq -r '.downloadUrl')" >> $GITHUB_OUTPUT
+
+      - name: Check if version already exists
+        id: check-release
+        run: |
+          if gh release view "v${{ steps.fetch-cursor.outputs.x64_version }}" --repo $GITHUB_REPOSITORY >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+            echo "Release already exists. Skipping."
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download Cursor AppImage for x64
+        if: steps.check-release.outputs.exists == 'false'
+        run: |
+          curl -L -o Cursor-${{ steps.fetch-cursor.outputs.x64_version }}-x86_64.AppImage "${{ steps.fetch-cursor.outputs.x64_download_url }}"
+          chmod +x Cursor-${{ steps.fetch-cursor.outputs.x64_version }}-x86_64.AppImage
+
+      - name: Create GitHub Release
+        if: steps.check-release.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.fetch-cursor.outputs.x64_version }}
+          name: Cursor ${{ steps.fetch-cursor.outputs.x64_version }}
+          body: "Automated release of Cursor ${{ steps.fetch-cursor.outputs.x64_version }} for Linux x64 and aarch64"
+          files: |
+            Cursor-${{ steps.fetch-cursor.outputs.x64_version }}-x86_64.AppImage
+            Cursor-${{ steps.fetch-cursor.outputs.arm64_version }}-aarch64.AppImage
+
+
+      - name: Set last release and run timestamps
+        id: set-timestamps
+        run: |
+          current_timestamp=$(date -u +"%Y-%m-%d %H:%M:%S UTC")
+
+          # If a release exists, use the current timestamp for Last Released On
+          if [[ "${{ steps.check-release.outputs.exists }}" == "false" ]]; then
+            release_timestamp=$current_timestamp
+          else
+            # Otherwise, read the last released timestamp from README.md
+            release_timestamp=$(grep -oP '(?<=\*\*⏳ Last Released On\*\*: ).*' README.md)
+          fi
+
+          # Set both the timestamps in environment variables for the next steps
+          echo "last_run=$current_timestamp" >> $GITHUB_ENV
+          echo "last_release=$release_timestamp" >> $GITHUB_ENV
+
+      - name: Update README with timestamps
+        run: |
+          # Remove any old status info
+          sed -i '/^## 📅 Release Status/,/^$/d' README.md
+
+          # Add the updated status info
+          echo -e "## 📅 Release Status" >> README.md
+          echo -e "- **⏳ Last Released On**: ${{ env.last_release }}" >> README.md
+          echo -e "- **🔄 Last Run**: ${{ env.last_run }}" >> README.md
+
+      - name: Commit and push README update
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet; then
+            echo "README unchanged, skipping commit."
+          else
+            git add README.md
+            git commit -m "📝 Update timestamps in README [workflow]"
+            git push
+          fi
