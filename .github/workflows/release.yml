@@ -47,7 +47,7 @@ jobs:
         if: steps.check-release.outputs.exists == 'false'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.fetch-warp.outputs.x64_version }}
+          tag_name: ${{ steps.fetch-warp.outputs.x64_version }}
           name: Warp ${{ steps.fetch-warp.outputs.x64_version }}
           body: "Automated release of Warp ${{ steps.fetch-warp.outputs.x64_version }} for Linux x64"
           files: |
