@@ -62,6 +62,7 @@ jobs:
           tag_name: ${{ steps.fetch-warp.outputs.x64_version }}
           name: Warp ${{ steps.fetch-warp.outputs.x64_version }}
           body: "Automated release of Warp ${{ steps.fetch-warp.outputs.x64_version }} for Linux x64"
+          draft: false
           files: |
             Warp-${{ steps.fetch-warp.outputs.x64_version }}-x86_64.AppImage
             Warp-${{ steps.fetch-warp.outputs.arm64_version }}-aarch64.AppImage
