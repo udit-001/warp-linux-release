@@ -18,7 +18,7 @@ jobs:
         id: fetch-warp
         run: |
           # Get the redirect URL from the 302 response
-          x64_redirect_url=$(curl -s -I "https://app.warp.dev/download?package=appimage" | grep -i location | cut -d' ' -f2 | tr -d '\r\n')
+          x64_redirect_url=$(curl -s -i "https://app.warp.dev/download?package=appimage" | grep -i "^location:" | sed 's/^[Ll]ocation: *//' | tr -d '\r\n' | sed 's/[[:space:]]*$//')
           echo "x64_download_url=$x64_redirect_url" >> $GITHUB_OUTPUT
           
           # Extract version from the URL path (e.g., v0.2025.10.22.08.13.stable_02)
