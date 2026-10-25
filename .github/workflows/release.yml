@@ -57,7 +57,7 @@ jobs:
 
       - name: Create GitHub Release
         if: steps.check-release.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.fetch-warp.outputs.x64_version }}
           name: Warp ${{ steps.fetch-warp.outputs.x64_version }}
